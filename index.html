@@ -20,3 +20,36 @@
     <p class="source">Data: Wikidata (gene &rarr; genetic association &rarr; cancer).</p>
   </header>
 </html>
+
+
+
+    <!-- Summary numbers which will be filled in by script.js -->
+    <section id="summary" aria-labelledby="summary-title">
+      <h2 id="summary-title">At a glance</h2>
+      <div id="stats" class="stats"></div>
+    </section>
+ 
+    <!--Interactive gene explorer -->
+    <section id="explorer" aria-labelledby="explorer-title">
+      <h2 id="explorer-title">Explore the genes</h2>
+ 
+      <div class="controls">
+        <div id="category-filters" class="button-group" role="group" aria-label="Filter by category"></div>
+ 
+        <label for="gene-search">Search gene</label>
+        <input id="gene-search" type="search" placeholder="e.g. TP53" autocomplete="off">
+ 
+        <label for="chromosome-select">Chromosome</label>
+        <select id="chromosome-select"></select>
+      </div>
+ 
+      <p id="result-count" aria-live="polite"></p>
+ 
+      <div class="explorer-layout">
+        <ul id="gene-list" class="gene-list"></ul>
+ 
+        <aside id="gene-detail" class="gene-detail" aria-live="polite">
+          <p class="placeholder">Select a gene to see its cancers.</p>
+        </aside>
+      </div>
+    </section>
