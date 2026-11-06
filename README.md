@@ -9,7 +9,3 @@ Which genes associated with breast cancer are also associated with other cancers
 
 **If possible**: Do the cancers differ in the cell machinery/processes their genes are involved in?
 
-
-# Possible Research Question 2
-
-Are there genes shared between endometriosis and infertility and PMOS?
