@@ -1,6 +1,5 @@
 // script.js: interactivity for the breast cancer gene explorer.
-// GENES is filled by loadGenes() (sparql.js), which queries Wikidata live and
-// falls back to the snapshot in data.js. Each gene looks like:
+// GENES is filled by loadGenes() (sparql.js), which queries Wikidata live. Each gene looks like:
 // { id, symbol, chromosome, breast: [..], other: [..], category }
 // where category is "shared" | "breast-only" | "other-only".
  
@@ -68,7 +67,7 @@ function genesIn(categoryKey) {
   return GENES.filter(cat.test);
 }
  
-/* ---------- Summary cards ---------- */
+/*  Summary cards */
  
 function renderStats() {
   const breast = genesIn("breast");
@@ -94,7 +93,7 @@ function renderStats() {
   );
 }
  
-/* ---------- Controls ---------- */
+/* Controls */
  
 function renderCategoryFilters() {
   const group = document.getElementById("category-filters");
@@ -220,55 +219,5 @@ function renderGeneDetail() {
  
   panel.replaceChildren(...parts);
 }
- 
-/* ---------- Update + init ---------- */
- 
-function updateView() {
-  document.querySelectorAll("#category-filters button").forEach(btn => {
-    btn.setAttribute("aria-pressed", String(btn.dataset.category === state.category));
-  });
-  renderGeneList();
-  renderGeneDetail();
-}
- 
-function setStatus(message, kind) {
-  const status = document.getElementById("data-status");
-  status.textContent = message;
-  status.className = "data-status " + (kind || "");
-}
- 
-async function init() {
-  setStatus("Loading the latest data from Wikidata…", "loading");
-  bindSearch(); // the search box works as soon as the page loads
- 
-  let result;
-  try {
-    result = await loadGenes();
-  } catch (error) {
-    setStatus("Could not load data: " + error.message, "error");
-    return;
-  }
- 
-  GENES = result.genes;
- 
-  if (result.source === "live") {
-    setStatus("Live data from Wikidata, loaded " + result.loadedAt.toLocaleString() + ".", "live");
-  } else {
-    setStatus("Wikidata could not be reached (" + result.error + "). Showing a saved snapshot instead.", "warning");
-  }
- 
-  renderStats();
-  renderCategoryFilters();
-  renderChromosomeSelect();
-  updateView();
- 
-  // Charts (step 5) should listen for this event instead of assuming data exists.
-  document.dispatchEvent(new CustomEvent("genes-loaded", { detail: { genes: GENES, source: result.source } }));
- 
-  // Handy while developing step 5: inspect these in the browser console.
-  console.log("Breast genes per chromosome:", chromosomeCounts(genesIn("breast")));
-  console.log("Other-cancer genes per chromosome:", chromosomeCounts(genesIn("other-only")));
-}
- 
-document.addEventListener("DOMContentLoaded", init);
+
  
