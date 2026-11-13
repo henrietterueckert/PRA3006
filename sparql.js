@@ -43,3 +43,44 @@ async function runQuery(query) {
   const json = await response.json();
   return json.results.bindings;
 }
+
+
+// "human chromosome 17" -> "17"; unknown/missing -> "Unknown"
+function cleanChromosome(label) {
+  if (!label) return "Unknown";
+  const m = label.match(/chromosome\s+(\w+)/i);
+  return m ? m[1].toUpperCase() : label;
+}
+
+// Wikidata id from a URI (".../entity/Q123" -> "Q123")
+function idFromUri(uri) {
+  return uri.substring(uri.lastIndexOf("/") + 1);
+}
+
+// Group rows into one object per gene.
+// category: "breast-only" | "shared" | "other-only"
+function buildGenes(rows) {
+  const map = new Map();
+  for (const r of rows) {
+    const id = idFromUri(r.gene.value);
+    if (!map.has(id)) {
+      map.set(id, {
+        id,
+        label: r.geneLabel.value,
+        chromosome: cleanChromosome(r.chromosomeLabel && r.chromosomeLabel.value),
+        breastDiseases: new Set(),
+        otherDiseases: new Set(),
+        processes: new Set(),
+      });
+    }
+    const g = map.get(id);
+    const isBreast = r.isBreast && r.isBreast.value === "true";
+    (isBreast ? g.breastDiseases : g.otherDiseases).add(r.diseaseLabel.value);
+  }
+  for (const g of map.values()) {
+    const b = g.breastDiseases.size > 0;
+    const o = g.otherDiseases.size > 0;
+    g.category = b && o ? "shared" : b ? "breast-only" : "other-only";
+  }
+  return [...map.values()];
+}
