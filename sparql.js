@@ -17,3 +17,18 @@ SELECT ?gene ?geneLabel ?chromosomeLabel ?diseaseLabel ?isBreast WHERE {
   OPTIONAL { ?gene wdt:P1057 ?chromosome. }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }`;
+
+
+// Q2 (the extra question): biological processes (P682) of those same genes.
+// In Wikidata, processes are recorded on the protein a gene encodes (P688),
+// not on the gene itself, so we go gene -> protein -> process.
+const PROCESS_QUERY = `
+SELECT ?gene ?processLabel WHERE {
+  ?gene wdt:P31 wd:Q7187;
+        wdt:P703 wd:Q15978631;
+        wdt:P2293 ?disease;
+        wdt:P688 ?protein.
+  ?protein wdt:P682 ?process.
+  ?disease wdt:P279* wd:Q12078.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}`;
