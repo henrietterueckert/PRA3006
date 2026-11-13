@@ -51,12 +51,12 @@ function cleanChromosome(label) {
   const m = label.match(/chromosome\s+(\w+)/i);
   return m ? m[1].toUpperCase() : label;
 }
-
+ 
 // Wikidata id from a URI (".../entity/Q123" -> "Q123")
 function idFromUri(uri) {
   return uri.substring(uri.lastIndexOf("/") + 1);
 }
-
+ 
 // Group rows into one object per gene.
 // category: "breast-only" | "shared" | "other-only"
 function buildGenes(rows) {
