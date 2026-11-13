@@ -95,9 +95,12 @@ async function init() {
   const status = document.getElementById("status");
   try {
     status.textContent = "Querying Wikidata…";
-    const breastRows = await runQuery(BREAST_DISEASE_QUERY);
-    const breastIds = new Set(breastRows.map((row) => idFromUri(row.disease.value)));
-    genes = buildGenes(await runQuery(SPARQL_QUERY), breastIds);
+    const [rows, breastRows] = await Promise.all([
+      runQuery(SPARQL_QUERY),
+      runQuery(BREAST_DISEASE_QUERY),
+    ]);
+    const breastIds = new Set(breastRows.map((r) => idFromUri(r.disease.value)));
+    genes = buildGenes(rows, breastIds);
     status.textContent = "Loaded " + genes.length + " genes.";
     renderSummary();
     renderChromosomes(document.getElementById("chrom-mode").value);
