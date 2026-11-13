@@ -69,4 +69,46 @@ function renderChromosomes(mode) {
         .text(`Chr ${d.chrom}, ${d.key === "Breast" ? "breast" : "other"}: ${d.value.toFixed(mode === "percent" ? 1 : 0)}${unit}`);
     })
     .on("mouseleave", () => tip.style("opacity", 0));
+  // legend
+  [["Breast cancer genes", "#d6336c"], ["Other cancer genes", "#3b82c4"]].forEach(([t, c], i) => {
+    svg.append("rect").attr("x", W - 200).attr("y", m.t + i * 20).attr("width", 12).attr("height", 12).attr("fill", c);
+    svg.append("text").attr("x", W - 183).attr("y", m.t + 11 + i * 20).text(t);
+  });
 }
+
+function renderSummary() {
+  const items = [
+    ["breast-only", "Breast cancer only", "#d6336c"],
+    ["shared", "Breast + other cancers", "#7c5cbf"],
+    ["other-only", "Other cancers only", "#3b82c4"],
+  ];
+  const box = document.getElementById("summary");
+  box.innerHTML = "";
+  for (const [cat, name, color] of items) {
+    const n = genes.filter((g) => g.category === cat).length;
+    box.innerHTML += `<div class="card" style="border-top:6px solid ${color}">
+      <div class="big">${n}</div><div>${name}</div></div>`;
+  }
+}
+
+async function init() {
+  const status = document.getElementById("status");
+  try {
+    status.textContent = "Querying Wikidata…";
+    genes = buildGenes(await runQuery(SPARQL_QUERY));
+    status.textContent = "Loaded " + genes.length + " genes.";
+    renderSummary();
+    renderChromosomes(document.getElementById("chrom-mode").value);
+  } catch (e) {
+    status.textContent = "Error: " + e.message;
+  }
+
+
+}
+
+// re-draw when the dropdown changes
+document.getElementById("chrom-mode").onchange = (e) => {
+  if (genes.length) renderChromosomes(e.target.value);
+};
+
+init();
