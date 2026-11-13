@@ -84,3 +84,12 @@ function buildGenes(rows) {
   }
   return [...map.values()];
 }
+
+// Attach process labels to the gene objects built above.
+function addProcesses(genes, rows) {
+  const byId = new Map(genes.map((g) => [g.id, g]));
+  for (const r of rows) {
+    const g = byId.get(idFromUri(r.gene.value));
+    if (g) g.processes.add(r.processLabel.value);
+  }
+}
