@@ -24,3 +24,20 @@
       <p class="note">Top biological processes of each group's genes. Wikidata coverage is incomplete!</p>
       <div id="process-chart" class="chart">Waiting for data…</div>
     </section>
+
+    <section>
+      <h2>4. Gene explorer</h2>
+      <input id="search" type="search" placeholder="Search gene name…">
+      <select id="category-filter">
+        <option value="all">All categories</option>
+        <option value="breast-only">Breast cancer only</option>
+        <option value="shared">Breast + other cancers</option>
+        <option value="other-only">Other cancers only</option>
+      </select>
+      <span id="table-count"></span>
+      <table id="gene-table">
+        <thead><tr><th>Gene</th><th>Chromosome</th><th>Category</th><th>Associated cancers</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
