@@ -32,3 +32,14 @@ SELECT ?gene ?processLabel WHERE {
   ?disease wdt:P279* wd:Q12078.
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }`;
+
+// Send a query to Wikidata and return the result rows (array of binding objects).
+async function runQuery(query) {
+  const url = SPARQL_ENDPOINT + "?format=json&origin=*&query=" + encodeURIComponent(query);
+  const response = await fetch(url, { headers: { Accept: "application/sparql-results+json" } });
+  if (!response.ok) {
+    throw new Error("Wikidata returned HTTP " + response.status);
+  }
+  const json = await response.json();
+  return json.results.bindings;
+}
