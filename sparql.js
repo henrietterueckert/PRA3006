@@ -8,15 +8,18 @@ const SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
 // Human genes (Q7187) with a "genetic association" (P2293) to any cancer
 // (Q12078 or a subclass of it), plus the gene's chromosome (P1057).
 const SPARQL_QUERY = `
-SELECT ?gene ?geneLabel ?chromosomeLabel ?diseaseLabel ?isBreast WHERE {
+SELECT ?gene ?geneLabel ?chromosomeLabel ?disease ?diseaseLabel WHERE {
   ?gene wdt:P31 wd:Q7187;
         wdt:P703 wd:Q15978631;
         wdt:P2293 ?disease.
   ?disease wdt:P279* wd:Q12078.
-  BIND(EXISTS { ?disease wdt:P279* wd:Q128581 } AS ?isBreast)
   OPTIONAL { ?gene wdt:P1057 ?chromosome. }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }`;
+
+// small and fast: just the IDs of breast cancer and its subtypes
+const BREAST_DISEASE_QUERY = `
+SELECT ?disease WHERE { ?disease wdt:P279* wd:Q128581. }`;
 
 
 // Q2 (the extra question): biological processes (P682) of those same genes.
@@ -59,7 +62,7 @@ function idFromUri(uri) {
  
 // Group rows into one object per gene.
 // category: "breast-only" | "shared" | "other-only"
-function buildGenes(rows) {
+function buildGenes(rows, breastIds) {
   const map = new Map();
   for (const r of rows) {
     const id = idFromUri(r.gene.value);
@@ -74,7 +77,7 @@ function buildGenes(rows) {
       });
     }
     const g = map.get(id);
-    const isBreast = r.isBreast && r.isBreast.value === "true";
+    const isBreast = breastIds.has(idFromUri(r.disease.value));
     (isBreast ? g.breastDiseases : g.otherDiseases).add(r.diseaseLabel.value);
   }
   for (const g of map.values()) {
