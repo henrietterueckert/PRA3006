@@ -1,55 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Breast Cancer</title>
-</head>
-<body>
 
-<h1>Genes involved in Breast Cancer</h1>
-<p>An interactive website.</p>
-
-</body>
-
- <header id="top">
-    <h1>Breast cancer genes in context</h1>
-    <p class="question">
-      Which genes associated with breast cancer are also associated with other cancers,
-      and which are unique to breast cancer? Are they spread differently across
-      chromosomes?
-    </p>
-    <p class="source">Data: Wikidata (gene &rarr; genetic association &rarr; cancer).</p>
-  </header>
-</html>
-
-
-
-    <!-- Summary numbers which will be filled in by script.js -->
-    <section id="summary" aria-labelledby="summary-title">
-      <h2 id="summary-title">At a glance</h2>
-      <div id="stats" class="stats"></div>
+  <main>
+    <p id="status" class="status">Starting…</p>
+ 
+    <section>
+      <h2>1. Shared vs. unique genes</h2>
+      <div id="summary" class="cards"></div>
     </section>
  
-    <!--Interactive gene explorer -->
-    <section id="explorer" aria-labelledby="explorer-title">
-      <h2 id="explorer-title">Explore the genes</h2>
- 
-      <div class="controls">
-        <div id="category-filters" class="button-group" role="group" aria-label="Filter by category"></div>
- 
-        <label for="gene-search">Search gene</label>
-        <input id="gene-search" type="search" placeholder="e.g. TP53" autocomplete="off">
- 
-        <label for="chromosome-select">Chromosome</label>
-        <select id="chromosome-select"></select>
-      </div>
- 
-      <p id="result-count" aria-live="polite"></p>
- 
-      <div class="explorer-layout">
-        <ul id="gene-list" class="gene-list"></ul>
- 
-        <aside id="gene-detail" class="gene-detail" aria-live="polite">
-          <p class="placeholder">Select a gene to see its cancers.</p>
-        </aside>
-      </div>
+    <section>
+      <h2>2. Chromosome distribution</h2>
+      <label>Show:
+        <select id="chrom-mode">
+          <option value="percent">% of each group's genes</option>
+          <option value="count">Number of genes</option>
+        </select>
+      </label>
+      <p class="note"> .... to be filled in.</p>
+      <div id="chrom-chart" class="chart"></div>
+    </section>
+
+     <section>
+      <h2>3. Cell processes (possible!)</h2>
+      <p class="note">Top biological processes of each group's genes. Wikidata coverage is incomplete!</p>
+      <div id="process-chart" class="chart">Waiting for data…</div>
     </section>
