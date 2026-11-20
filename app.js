@@ -117,3 +117,69 @@ document.getElementById("chrom-mode").onchange = (e) => {
 };
 
 init();
+
+// top biological processes, as % of each group's genes that have process data
+function renderProcesses() {
+  const box = d3.select("#process-chart").html("");
+  const groups = {
+    Breast: genes.filter((g) => g.breastDiseases.size > 0 && g.processes.size > 0),
+    Other: genes.filter((g) => g.otherDiseases.size > 0 && g.processes.size > 0),
+  };
+  if (!groups.Breast.length && !groups.Other.length) {
+    box.text("No process data found in Wikidata for these genes.");
+    return;
+  }
+
+  const pct = (key, p) =>
+    groups[key].length ? (100 * groups[key].filter((g) => g.processes.has(p)).length) / groups[key].length : 0;
+
+  const all = new Set(genes.flatMap((g) => [...g.processes]));
+  const rows = [...all]
+    .map((p) => ({ process: p, Breast: pct("Breast", p), Other: pct("Other", p) }))
+    .sort((a, b) => b.Breast + b.Other - (a.Breast + a.Other))
+    .slice(0, 10);
+
+  const W = 900, rowH = 44, m = { t: 30, r: 30, b: 40, l: 280 };
+  const H = m.t + m.b + rows.length * rowH;
+  const svg = box.append("svg").attr("viewBox", `0 0 ${W} ${H}`);
+
+  const y0 = d3.scaleBand().domain(rows.map((r) => r.process)).range([m.t, H - m.b]).padding(0.2);
+  const y1 = d3.scaleBand().domain(["Breast", "Other"]).range([0, y0.bandwidth()]).padding(0.05);
+  const x = d3.scaleLinear()
+    .domain([0, d3.max(rows, (r) => Math.max(r.Breast, r.Other)) * 1.1])
+    .nice()
+    .range([m.l, W - m.r]);
+
+  svg.append("g").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x));
+  svg.append("g").attr("transform", `translate(${m.l},0)`).call(d3.axisLeft(y0));
+  svg.append("text").attr("x", (m.l + W - m.r) / 2).attr("y", H - 5).attr("text-anchor", "middle")
+    .text("% of the group's genes with process data");
+
+  const tip = d3.select("#tooltip");
+  svg.selectAll("g.proc")
+    .data(rows)
+    .join("g")
+    .attr("class", "proc")
+    .attr("transform", (d) => `translate(0,${y0(d.process)})`)
+    .selectAll("rect")
+    .data((d) => ["Breast", "Other"].map((k) => ({ key: k, value: d[k], process: d.process })))
+    .join("rect")
+    .attr("x", m.l)
+    .attr("y", (d) => y1(d.key))
+    .attr("height", y1.bandwidth())
+    .attr("width", (d) => x(d.value) - m.l)
+    .attr("fill", (d) => COLORS[d.key])
+    .on("mousemove", (event, d) => {
+      tip.style("opacity", 1)
+        .style("left", event.pageX + 12 + "px")
+        .style("top", event.pageY + 12 + "px")
+        .text(`${d.process}, ${d.key === "Breast" ? "breast" : "other"}: ${d.value.toFixed(1)}%`);
+    })
+    .on("mouseleave", () => tip.style("opacity", 0));
+
+  [["Breast cancer genes (" + groups.Breast.length + " with data)", COLORS.Breast],
+   ["Other cancer genes (" + groups.Other.length + " with data)", COLORS.Other]].forEach(([t, c], i) => {
+    svg.append("rect").attr("x", W - 260).attr("y", 5 + i * 18).attr("width", 12).attr("height", 12).attr("fill", c);
+    svg.append("text").attr("x", W - 243).attr("y", 16 + i * 18).attr("font-size", 12).text(t);
+  });
+}
