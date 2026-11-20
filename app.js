@@ -1,6 +1,7 @@
 "use strict";
 
 let genes = [];
+const COLORS = { Breast: "#d6336c", Other: "#3b82c4" };
 
 // sort chromosomes: 1..22, then X, Y, MT, then anything else
 function chromSort(a, b) {
@@ -106,9 +107,18 @@ async function init() {
     renderChromosomes(document.getElementById("chrom-mode").value);
   } catch (e) {
     status.textContent = "Error: " + e.message;
+    return;
   }
 
-
+  try {
+    status.textContent = "Loaded " + genes.length + " genes. Loading cell processes…";
+    const processRows = await runQuery(PROCESS_QUERY);
+    addProcesses(genes, processRows);
+    renderProcesses();
+    status.textContent = "Loaded " + genes.length + " genes.";
+  } catch (e) {
+    document.getElementById("process-chart").textContent = "Could not load process data: " + e.message;
+  }
 }
 
 // re-draw when the dropdown changes
