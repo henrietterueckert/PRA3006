@@ -92,6 +92,44 @@ function renderSummary() {
   }
 }
 
+const CATEGORY_NAMES = {
+  "breast-only": "Breast cancer only",
+  shared: "Breast + other cancers",
+  "other-only": "Other cancers only",
+};
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}
+
+function renderTable() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  const cat = document.getElementById("category-filter").value;
+  const matches = genes
+    .filter((g) => (cat === "all" || g.category === cat) && g.label.toLowerCase().includes(q))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  const shown = matches.slice(0, 500);
+  document.querySelector("#gene-table tbody").innerHTML = shown
+    .map((g) => {
+      const cancers = [...g.breastDiseases, ...g.otherDiseases].sort().join(", ");
+      return `<tr>
+        <td>${escapeHtml(g.label)}</td>
+        <td>${escapeHtml(g.chromosome)}</td>
+        <td>${CATEGORY_NAMES[g.category]}</td>
+        <td>${escapeHtml(cancers)}</td>
+      </tr>`;
+    })
+    .join("");
+
+  document.getElementById("table-count").textContent =
+    matches.length > 500
+      ? "Showing first 500 of " + matches.length + " genes. Refine your search to see more."
+      : matches.length + " genes";
+}
+
 async function init() {
   const status = document.getElementById("status");
   try {
@@ -105,6 +143,7 @@ async function init() {
     status.textContent = "Loaded " + genes.length + " genes.";
     renderSummary();
     renderChromosomes(document.getElementById("chrom-mode").value);
+    renderTable();
   } catch (e) {
     status.textContent = "Error: " + e.message;
     return;
@@ -125,6 +164,9 @@ async function init() {
 document.getElementById("chrom-mode").onchange = (e) => {
   if (genes.length) renderChromosomes(e.target.value);
 };
+
+document.getElementById("search").oninput = () => { if (genes.length) renderTable(); };
+document.getElementById("category-filter").onchange = () => { if (genes.length) renderTable(); };
 
 init();
 
