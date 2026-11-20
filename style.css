@@ -1,0 +1,73 @@
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #222;
+  background: #fafafa;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+section {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem 1.25rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+h2 { margin-top: 0; font-size: 1.25rem; }
+
+.status { color: #666; font-style: italic; }
+.note { color: #666; font-size: .9rem; }
+
+/* section 1: summary cards */
+.cards { display: flex; gap: 1rem; flex-wrap: wrap; }
+.card {
+  flex: 1 1 180px;
+  text-align: center;
+  padding: 1rem;
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+.card .big { font-size: 2.4rem; font-weight: 700; }
+
+/* charts */
+.chart svg { width: 100%; height: auto; display: block; }
+
+/* tooltip: hidden until you hover a bar */
+#tooltip {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(0, 0, 0, .85);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: .85rem;
+  z-index: 10;
+}
+
+/* section 4: controls and table */
+select, input[type="search"] {
+  padding: .4rem .6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: .95rem;
+}
+#table-count { color: #666; font-size: .9rem; margin-left: .5rem; }
+
+#gene-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin-top: .75rem; }
+#gene-table th, #gene-table td {
+  text-align: left;
+  padding: .45rem .6rem;
+  border-bottom: 1px solid #ddd;
+  vertical-align: top;
+}
+#gene-table th { background: #fafafa; }
+#gene-table tbody tr:hover { background: #f3f3f8; }

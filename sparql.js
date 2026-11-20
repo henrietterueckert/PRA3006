@@ -51,7 +51,8 @@ async function runQuery(query) {
 // "human chromosome 17" -> "17"; unknown/missing -> "Unknown"
 function cleanChromosome(label) {
   if (!label) return "Unknown";
-  const m = label.match(/chromosome\s+(\w+)/i);
+  if (/mitochondrial/i.test(label)) return "MT";
+  const m = label.match(/chromosome\s+(\w+)/i) || label.match(/(\w+)\s+chromosome/i);
   return m ? m[1].toUpperCase() : label;
 }
  
