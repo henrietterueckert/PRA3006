@@ -2,6 +2,13 @@
 
 let genes = [];
 
+const CATEGORIES = {
+  "breast-only": { name: "Breast cancer only", color: "#d6336c" },
+  shared: { name: "Breast + other cancers", color: "#7c5cbf" },
+  "other-only": { name: "Other cancers only", color: "#3b82c4" },
+};
+
+
 // sort chromosomes: 1..22, then X, Y, MT, then anything else
 function chromSort(a, b) {
   const rank = (c) =>
@@ -77,25 +84,14 @@ function renderChromosomes(mode) {
 }
 
 function renderSummary() {
-  const items = [
-    ["breast-only", "Breast cancer only", "#d6336c"],
-    ["shared", "Breast + other cancers", "#7c5cbf"],
-    ["other-only", "Other cancers only", "#3b82c4"],
-  ];
-  const box = document.getElementById("summary");
-  box.innerHTML = "";
-  for (const [cat, name, color] of items) {
+  let html = "";
+  for (const cat in CATEGORIES) {
     const n = genes.filter((g) => g.category === cat).length;
-    box.innerHTML += `<div class="card" style="border-top:6px solid ${color}">
-      <div class="big">${n}</div><div>${name}</div></div>`;
+    html += `<div class="card" style="border-top:6px solid ${CATEGORIES[cat].color}">
+      <div class="big">${n}</div><div>${CATEGORIES[cat].name}</div></div>`;
   }
+  document.getElementById("summary").innerHTML = html;
 }
-
-const CATEGORY_NAMES = {
-  "breast-only": "Breast cancer only",
-  shared: "Breast + other cancers",
-  "other-only": "Other cancers only",
-};
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
@@ -117,7 +113,7 @@ function renderTable() {
       return `<tr>
         <td>${escapeHtml(g.label)}</td>
         <td>${escapeHtml(g.chromosome)}</td>
-        <td>${CATEGORY_NAMES[g.category]}</td>
+        <td>${CATEGORIES[g.category].name}</td>
         <td>${escapeHtml(cancers)}</td>
       </tr>`;
     })
