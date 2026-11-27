@@ -1,4 +1,4 @@
-// queris gene-cancer associations live from Wikidata and turns
+// queries gene-cancer associations live from Wikidata and turns
 // the raw SPARQL rows into gene objects
 
 "use strict";
@@ -21,20 +21,6 @@ SELECT ?gene ?geneLabel ?chromosomeLabel ?disease ?diseaseLabel WHERE {
 const BREAST_DISEASE_QUERY = `
 SELECT ?disease WHERE { ?disease wdt:P279* wd:Q128581. }`;
 
-
-// Q2 (the extra question): biological processes (P682) of those same genes.
-// In Wikidata, processes are recorded on the protein a gene encodes (P688),
-// not on the gene itself, so we go gene -> protein -> process.
-const PROCESS_QUERY = `
-SELECT ?gene ?processLabel WHERE {
-  ?gene wdt:P31 wd:Q7187;
-        wdt:P703 wd:Q15978631;
-        wdt:P2293 ?disease;
-        wdt:P688 ?protein.
-  ?protein wdt:P682 ?process.
-  ?disease wdt:P279* wd:Q12078.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}`;
 
 // Send a query to Wikidata and return the result rows (array of binding objects).
 async function runQuery(query) {
@@ -74,7 +60,6 @@ function buildGenes(rows, breastIds) {
         chromosome: cleanChromosome(r.chromosomeLabel && r.chromosomeLabel.value),
         breastDiseases: new Set(),
         otherDiseases: new Set(),
-        processes: new Set(),
       });
     }
     const g = map.get(id);
@@ -89,11 +74,3 @@ function buildGenes(rows, breastIds) {
   return [...map.values()];
 }
 
-// Attach process labels to the gene objects built above.
-function addProcesses(genes, rows) {
-  const byId = new Map(genes.map((g) => [g.id, g]));
-  for (const r of rows) {
-    const g = byId.get(idFromUri(r.gene.value));
-    if (g) g.processes.add(r.processLabel.value);
-  }
-}
