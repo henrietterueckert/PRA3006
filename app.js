@@ -125,6 +125,89 @@ function renderTable() {
       : matches.length + " genes";
 }
 
+// =================================================================
+// NETWORK GRAPH (d3 force layout)
+// Nodes = breast cancer, shared genes, and the top 10 other cancers.
+// Links = "this gene is associated with this cancer".
+// =================================================================
+function renderNetwork() {
+  const shared = genes.filter((g) => g.category === "shared");
+
+  // Count how many shared genes each other cancer has, keep the top 10.
+  const counts = new Map();
+  for (const g of shared) {
+    for (const c of g.otherDiseases) counts.set(c, (counts.get(c) || 0) + 1);
+  }
+  const topCancers = [...counts]
+    .sort((a, b) => b[1] - a[1])   // most genes first
+    .slice(0, 10)
+    .map((d) => d[0]);             // keep only the names
+
+  // Only keep shared genes that are linked to at least one of those cancers.
+  const netGenes = shared.filter((g) => topCancers.some((c) => g.otherDiseases.has(c)));
+
+  if (netGenes.length === 0) {
+    document.getElementById("network").textContent = "No shared genes found.";
+    return;
+  }
+
+  // NODES: every node needs a unique id, a display name and a type.
+  const nodes = [
+    { id: "BREAST", name: "Breast cancer", type: "breast" },
+    ...topCancers.map((c) => ({ id: c, name: c, type: "cancer" })),
+    ...netGenes.map((g) => ({ id: g.id, name: g.label, type: "gene" })),
+  ];
+
+  // LINKS: breast cancer -> each gene, and each gene -> its other cancers.
+  const links = [];
+  for (const g of netGenes) {
+    links.push({ source: "BREAST", target: g.id });
+    for (const c of topCancers) {
+      if (g.otherDiseases.has(c)) links.push({ source: g.id, target: c });
+    }
+  }
+
+  const W = 900, H = 600;
+  const COLORS = { breast: "#d6336c", gene: "#7c5cbf", cancer: "#3b82c4" };
+  const svg = d3.select("#network").html("").append("svg").attr("viewBox", `0 0 ${W} ${H}`);
+
+  // The FORCE SIMULATION computes where each node goes. Three forces:
+  //   link   = linked nodes pull towards each other (.id tells d3 which field identifies a node)
+  //   charge = every node pushes the others away, so they don't pile up (negative = push)
+  //   center = pulls everything towards the middle of the picture
+  const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id((d) => d.id).distance(70))
+    .force("charge", d3.forceManyBody().strength(-50))
+    .force("center", d3.forceCenter(W / 2, H / 2));
+
+  // DRAW the elements once. (Their positions are filled in by the "tick" below.)
+  const link = svg.append("g").attr("stroke", "#ccc")
+    .selectAll("line").data(links).join("line");
+
+  const node = svg.append("g")
+    .selectAll("circle").data(nodes).join("circle")
+    .attr("r", (d) => (d.type === "breast" ? 16 : d.type === "cancer" ? 10 : 5))
+    .attr("fill", (d) => COLORS[d.type]);
+  node.append("title").text((d) => d.name); // the hover text
+
+  // Text labels only for the cancers (labels on ~100 genes would be unreadable).
+  const label = svg.append("g")
+    .selectAll("text").data(nodes.filter((d) => d.type !== "gene")).join("text")
+    .attr("font-size", 11)
+    .attr("text-anchor", "middle")
+    .text((d) => d.name);
+
+  // The simulation runs in small steps ("ticks"). On every tick the nodes
+  // have new x/y positions, so we move the drawn elements to match.
+  // After forceLink runs, link.source and link.target are the node objects themselves.
+  simulation.on("tick", () => {
+    link.attr("x1", (d) => d.source.x).attr("y1", (d) => d.source.y)
+        .attr("x2", (d) => d.target.x).attr("y2", (d) => d.target.y);
+    node.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+    label.attr("x", (d) => d.x).attr("y", (d) => d.y - 14);
+  });
+}
+
 async function init() {
   const status = document.getElementById("status");
   try {
@@ -139,6 +222,7 @@ async function init() {
     renderSummary();
     renderChromosomes(document.getElementById("chrom-mode").value);
     renderTable();
+    renderNetwork();
   } catch (e) {
     status.textContent = "Error: " + e.message;
   }
