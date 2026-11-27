@@ -38,9 +38,9 @@ h2 { margin-top: 0; font-size: 1.25rem; }
 .card .big { font-size: 2.4rem; font-weight: 700; }
 
 /* charts */
-.chart svg { width: 100%; height: auto; display: block; }
+.chart svg, .cards svg { width: 100%; height: auto; display: block; }
 
-/* tooltip: hidden until you hover a bar */
+/* tooltip: hidden until you hover a chart mark */
 #tooltip {
   position: absolute;
   pointer-events: none;

@@ -16,6 +16,73 @@ function chromSort(a, b) {
   return rank(a) - rank(b);
 }
 
+// SECTION 1: Venn diagram. Two circles: breast cancer genes and other cancer genes.
+// The overlap is the shared genes.
+function renderSummary() {
+  const count = (cat) => genes.filter((g) => g.category === cat).length;
+  const breastOnly = count("breast-only");
+  const shared = count("shared");
+  const otherOnly = count("other-only");
+
+  const W = 900, H = 340, cy = 170;
+
+  // Circle AREA is proportional to the number of genes, so radius = k * sqrt(count).
+  // Each circle holds its own genes plus the shared ones.
+  const rOther = 130;
+  const k = rOther / Math.sqrt(otherOnly + shared);
+  const rBreast = k * Math.sqrt(breastOnly + shared);
+
+  // Horizontal positions. The sizes are to scale, the overlap is only approximate.
+  const dist = rOther + 0.2 * rBreast;      // distance between the two centres
+  const span = rBreast + dist + rOther;     // total width of the picture
+  const cxBreast = (W - span) / 2 + rBreast;
+  const cxOther = cxBreast + dist;
+
+  const svg = d3.select("#summary").html("").append("svg").attr("viewBox", `0 0 ${W} ${H}`);
+
+  // The two circles. They are see-through, so the overlap looks purple.
+  svg.selectAll("circle")
+    .data([
+      { cx: cxBreast, r: rBreast, color: "#d6336c" },
+      { cx: cxOther, r: rOther, color: "#3b82c4" },
+    ])
+    .join("circle")
+    .attr("cx", (d) => d.cx)
+    .attr("cy", cy)
+    .attr("r", (d) => d.r)
+    .attr("fill", (d) => d.color)
+    .attr("fill-opacity", 0.6);
+
+  // The three regions. x = the middle of each region, y = where its name goes.
+  const regions = [
+    { n: breastOnly, name: "Breast cancer only", x: (cxBreast - rBreast + cxOther - rOther) / 2, y: cy + rOther + 30 },
+    { n: shared, name: "Breast + other cancers", x: (cxOther - rOther + cxBreast + rBreast) / 2, y: 20 },
+    { n: otherOnly, name: "Other cancers only", x: (cxBreast + rBreast + cxOther + rOther) / 2, y: cy + rOther + 30 },
+  ];
+
+  // A thin line from the "shared" name down to the overlap
+  svg.append("line")
+    .attr("x1", regions[1].x).attr("x2", regions[1].x)
+    .attr("y1", 28).attr("y2", cy - 20)
+    .attr("stroke", "#999");
+
+  // The numbers, inside the regions
+  svg.selectAll("text.n").data(regions).join("text")
+    .attr("class", "n")
+    .attr("x", (d) => d.x).attr("y", cy + 8)
+    .attr("text-anchor", "middle").attr("font-size", 24).attr("font-weight", 700)
+    .text((d) => d.n);
+
+  // The names
+  svg.selectAll("text.name").data(regions).join("text")
+    .attr("class", "name")
+    .attr("x", (d) => d.x).attr("y", (d) => d.y)
+    .attr("text-anchor", "middle").attr("font-size", 14)
+    .text((d) => d.name);
+}
+
+// SECTION 2: dot plot (dumbbell). On each chromosome, a pink dot (breast genes)
+// and a blue dot (other genes) joined by a line. A long line = big difference.
 function renderChromosomes(mode) {
   // two groups; a "shared" gene is in both
   const breast = genes.filter((g) => g.breastDiseases.size > 0);
@@ -33,66 +100,61 @@ function renderChromosomes(mode) {
     };
   });
 
-  // drawing area
+  const COLORS = { Breast: "#d6336c", Other: "#3b82c4" };
   const W = 900, H = 380, m = { t: 20, r: 20, b: 50, l: 55 };
   const svg = d3.select("#chrom-chart").html("").append("svg").attr("viewBox", `0 0 ${W} ${H}`);
 
-  // scales: they convert data values into pixel positions
-  const x0 = d3.scaleBand().domain(chroms).range([m.l, W - m.r]).padding(0.2);
-  const x1 = d3.scaleBand().domain(["Breast", "Other"]).range([0, x0.bandwidth()]).padding(0.05);
+  // x: scalePoint gives ONE position per chromosome (like scaleBand, but a point, not a band)
+  const x = d3.scalePoint().domain(chroms).range([m.l + 20, W - m.r - 20]);
   const y = d3.scaleLinear()
     .domain([0, d3.max(data, (d) => Math.max(d.Breast, d.Other)) * 1.1])
     .nice()
     .range([H - m.b, m.t]);
 
-  // axes
-  svg.append("g").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x0));
+  // axes and titles
+  svg.append("g").attr("transform", `translate(0,${H - m.b})`).call(d3.axisBottom(x));
   svg.append("g").attr("transform", `translate(${m.l},0)`).call(d3.axisLeft(y));
   svg.append("text").attr("x", W / 2).attr("y", H - 10).attr("text-anchor", "middle").text("Chromosome");
   svg.append("text").attr("transform", "rotate(-90)").attr("x", -H / 2).attr("y", 15)
     .attr("text-anchor", "middle")
     .text(mode === "percent" ? "% of that group's genes" : "Number of genes");
 
-  // bars: one <g> per chromosome, two <rect> inside each
-  const tip = d3.select("#tooltip");
-  svg.selectAll("g.chrom")
+  // The connecting lines: one per chromosome, from the breast dot to the other dot
+  svg.selectAll("line.link")
     .data(data)
-    .join("g")
-    .attr("class", "chrom")
-    .attr("transform", (d) => `translate(${x0(d.chrom)},0)`)
-    .selectAll("rect")
-    .data((d) => ["Breast", "Other"].map((k) => ({ key: k, value: d[k], chrom: d.chrom })))
-    .join("rect")
-    .attr("x", (d) => x1(d.key))
-    .attr("y", (d) => y(d.value))
-    .attr("width", x1.bandwidth())
-    .attr("height", (d) => y(0) - y(d.value))
-    .attr("fill", (d) => (d.key === "Breast" ? "#d6336c" : "#3b82c4"))
-    .on("mousemove", (event, d) => {
-      const unit = mode === "percent" ? "%" : "";
-      tip.style("opacity", 1)
-        .style("left", event.pageX + 12 + "px")
-        .style("top", event.pageY + 12 + "px")
-        .text(`Chr ${d.chrom}, ${d.key === "Breast" ? "breast" : "other"}: ${d.value.toFixed(mode === "percent" ? 1 : 0)}${unit}`);
-    })
-    .on("mouseleave", () => tip.style("opacity", 0));
+    .join("line")
+    .attr("class", "link")
+    .attr("x1", (d) => x(d.chrom)).attr("x2", (d) => x(d.chrom))
+    .attr("y1", (d) => y(d.Breast)).attr("y2", (d) => y(d.Other))
+    .attr("stroke", "#bbb").attr("stroke-width", 2);
+
+  // The dots: first one pink dot per chromosome, then one blue dot per chromosome
+  const tip = d3.select("#tooltip");
+  ["Breast", "Other"].forEach((key) => {
+    svg.selectAll("circle." + key)
+      .data(data)
+      .join("circle")
+      .attr("class", key)
+      .attr("cx", (d) => x(d.chrom))
+      .attr("cy", (d) => y(d[key]))
+      .attr("r", 6)
+      .attr("fill", COLORS[key])
+      .on("mousemove", (event, d) => {
+        const unit = mode === "percent" ? "%" : "";
+        tip.style("opacity", 1)
+          .style("left", event.pageX + 12 + "px")
+          .style("top", event.pageY + 12 + "px")
+          .text(`Chr ${d.chrom}, ${key === "Breast" ? "breast" : "other"}: ${d[key].toFixed(mode === "percent" ? 1 : 0)}${unit}`);
+      })
+      .on("mouseleave", () => tip.style("opacity", 0));
+  });
+
   // legend
-  [["Breast cancer genes", "#d6336c"], ["Other cancer genes", "#3b82c4"]].forEach(([t, c], i) => {
-    svg.append("rect").attr("x", W - 200).attr("y", m.t + i * 20).attr("width", 12).attr("height", 12).attr("fill", c);
+  [["Breast cancer genes", COLORS.Breast], ["Other cancer genes", COLORS.Other]].forEach(([t, c], i) => {
+    svg.append("circle").attr("cx", W - 195).attr("cy", m.t + 6 + i * 20).attr("r", 6).attr("fill", c);
     svg.append("text").attr("x", W - 183).attr("y", m.t + 11 + i * 20).text(t);
   });
 }
-
-function renderSummary() {
-  let html = "";
-  for (const cat in CATEGORIES) {
-    const n = genes.filter((g) => g.category === cat).length;
-    html += `<div class="card" style="border-top:6px solid ${CATEGORIES[cat].color}">
-      <div class="big">${n}</div><div>${CATEGORIES[cat].name}</div></div>`;
-  }
-  document.getElementById("summary").innerHTML = html;
-}
-
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
